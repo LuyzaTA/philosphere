@@ -261,7 +261,12 @@ function TraditionBadge({ tradition }) {
     'Zen Buddhist': '#A8DADC',
     Hindu: '#FF8C42',
     Islamic: '#00D4AA',
-    'Kyoto School': '#A8DADC'
+    'Kyoto School': '#A8DADC',
+    'Latin American': '#00C875',
+    Brazilian: '#00C875',
+    'Afro-Brazilian': '#E0A800',
+    Indigenous: '#7CB342',
+    Russian: '#FF4D4D'
   }
   return (
     <span style={{
@@ -601,6 +606,7 @@ function TraditionColumn({ title, color, phils, onSelect }) {
 
 export default function Compare({ onSelectPhilosopher }) {
   const t = useT()
+  const { lang } = useLang()
   const [expanded, setExpanded] = useState(null)
 
   const toggle = (id) => setExpanded(prev => prev === id ? null : id)
@@ -609,6 +615,10 @@ export default function Compare({ onSelectPhilosopher }) {
   const eastPhils = philosophers.filter(p =>
     ['East Asian', 'Buddhist', 'Zen Buddhist', 'Hindu', 'Islamic', 'Kyoto School'].includes(p.tradition)
   )
+  // Everything outside the West/East binary — Brazilian, Afro-Brazilian, Indigenous,
+  // Latin American and Russian thinkers, which would otherwise be hidden here.
+  const restPhils = philosophers.filter(p => !westPhils.includes(p) && !eastPhils.includes(p))
+  const restTitle = lang === 'pt' ? 'Sul Global e Descolonial' : 'Global South & Decolonial'
 
   return (
     <div style={{
@@ -737,6 +747,17 @@ export default function Compare({ onSelectPhilosopher }) {
               onSelect={onSelectPhilosopher}
             />
           </div>
+
+          {restPhils.length > 0 && (
+            <div style={{ marginTop: 40, paddingTop: 32, borderTop: '1px solid rgba(0,200,117,0.25)' }}>
+              <TraditionColumn
+                title={restTitle}
+                color="#00C875"
+                phils={restPhils}
+                onSelect={onSelectPhilosopher}
+              />
+            </div>
+          )}
         </motion.div>
       </div>
     </div>
