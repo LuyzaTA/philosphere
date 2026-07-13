@@ -154,8 +154,12 @@ function CountryLines() {
               for (let i = 0; i < ring.length - 1; i++) {
                 const [lng1, lat1] = ring[i]
                 const [lng2, lat2] = ring[i + 1]
-                const v1 = latLngToVec3(lat1, lng1, 1.004)
-                const v2 = latLngToVec3(lat2, lng2, 1.004)
+                // Lift borders clearly off the surface (was 1.004, which sat so
+                // close to the r=1 globe that depth-buffer precision caused
+                // z-fighting — borders dropped out over whole regions as the
+                // globe rotated). Nodes live at 1.025 and never had this issue.
+                const v1 = latLngToVec3(lat1, lng1, 1.015)
+                const v2 = latLngToVec3(lat2, lng2, 1.015)
                 positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z)
               }
             }
@@ -174,7 +178,7 @@ function CountryLines() {
   }, [])
 
   return (
-    <lineSegments ref={meshRef}>
+    <lineSegments ref={meshRef} renderOrder={1}>
       <bufferGeometry />
       <lineBasicMaterial
         color="#3a88e0"
