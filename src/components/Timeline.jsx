@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { eras, philosophers, getPhilosopherById } from '../data/index.js'
 import { useT, useLang } from '../i18n/index.jsx'
@@ -378,12 +378,102 @@ function EraDetail({ era, onClose, onSelectPhilosopher }) {
 export default function Timeline({ onSelectPhilosopher }) {
   const t = useT()
   const [selectedEra, setSelectedEra] = useState(null)
+  const [progress, setProgress] = useState(0)
   const scrollRef = useRef(null)
+  const scrubRef = useRef(null)
+  const drag = useRef({ down: false, moved: false, captured: false, startX: 0, startScroll: 0 })
+  const scrubbing = useRef(false)
+
+  const updateProgress = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    setProgress(max > 0 ? el.scrollLeft / max : 0)
+  }, [])
 
   const scroll = (dir) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: dir * 380, behavior: 'smooth' })
+    scrollRef.current?.scrollBy({ left: dir * 380, behavior: 'smooth' })
+  }
+
+  // Wheel → horizontal scroll, and click-drag to pan the timeline.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const onWheel = (e) => {
+      const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX
+      if (delta === 0) return
+      el.scrollLeft += delta
+      e.preventDefault()
     }
+    const onPointerDown = (e) => {
+      if (e.button !== 0) return
+      drag.current = { down: true, moved: false, captured: false, startX: e.clientX, startScroll: el.scrollLeft }
+    }
+    const onPointerMove = (e) => {
+      const d = drag.current
+      if (!d.down) return
+      const dx = e.clientX - d.startX
+      if (!d.moved && Math.abs(dx) > 5) {
+        d.moved = true
+        d.captured = true
+        el.setPointerCapture?.(e.pointerId)
+        el.style.cursor = 'grabbing'
+      }
+      if (d.moved) el.scrollLeft = d.startScroll - dx
+    }
+    const onPointerUp = (e) => {
+      const d = drag.current
+      if (d.captured) el.releasePointerCapture?.(e.pointerId)
+      d.down = false
+      d.captured = false
+      el.style.cursor = 'grab'
+    }
+    const onScroll = () => updateProgress()
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('pointerdown', onPointerDown)
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerup', onPointerUp)
+    el.addEventListener('pointercancel', onPointerUp)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    updateProgress()
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('pointerdown', onPointerDown)
+      el.removeEventListener('pointermove', onPointerMove)
+      el.removeEventListener('pointerup', onPointerUp)
+      el.removeEventListener('pointercancel', onPointerUp)
+      el.removeEventListener('scroll', onScroll)
+    }
+  }, [updateProgress])
+
+  // Suppress an era-card click that was actually the end of a drag.
+  const handleClickCapture = (e) => {
+    if (drag.current.moved) {
+      e.stopPropagation()
+      e.preventDefault()
+      drag.current.moved = false
+    }
+  }
+
+  // Draggable progress scrubber.
+  const seekTo = (clientX) => {
+    const bar = scrubRef.current, el = scrollRef.current
+    if (!bar || !el) return
+    const rect = bar.getBoundingClientRect()
+    const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+    el.scrollLeft = frac * (el.scrollWidth - el.clientWidth)
+  }
+  const onScrubDown = (e) => {
+    scrubbing.current = true
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+    seekTo(e.clientX)
+  }
+  const onScrubMove = (e) => { if (scrubbing.current) seekTo(e.clientX) }
+  const onScrubUp = (e) => {
+    scrubbing.current = false
+    e.currentTarget.releasePointerCapture?.(e.pointerId)
   }
 
   return (
@@ -462,6 +552,8 @@ export default function Timeline({ onSelectPhilosopher }) {
 
         <div
           ref={scrollRef}
+          className="timeline-track"
+          onClickCapture={handleClickCapture}
           style={{
             width: '100%', height: '100%',
             overflowX: 'auto',
@@ -470,7 +562,8 @@ export default function Timeline({ onSelectPhilosopher }) {
             alignItems: 'center',
             padding: '20px 40px',
             gap: 0,
-            scrollBehavior: 'smooth',
+            cursor: 'grab',
+            userSelect: 'none',
             position: 'relative', zIndex: 1
           }}
         >
@@ -490,6 +583,50 @@ export default function Timeline({ onSelectPhilosopher }) {
           <div style={{ width: 40, flexShrink: 0 }} />
         </div>
       </div>
+
+      {/* Fluid scrubber */}
+      <div style={{ flexShrink: 0, padding: '2px 40px 26px' }}>
+        <div
+          ref={scrubRef}
+          onPointerDown={onScrubDown}
+          onPointerMove={onScrubMove}
+          onPointerUp={onScrubUp}
+          onPointerCancel={onScrubUp}
+          style={{
+            position: 'relative',
+            height: 18,
+            display: 'flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            touchAction: 'none'
+          }}
+        >
+          <div style={{
+            position: 'absolute', left: 0, right: 0, height: 3,
+            background: 'rgba(107,70,255,0.15)', borderRadius: 3
+          }} />
+          <div style={{
+            position: 'absolute', left: 0, height: 3,
+            width: `${progress * 100}%`,
+            background: 'linear-gradient(90deg, rgba(107,70,255,0.6), rgba(0,245,255,0.6))',
+            borderRadius: 3
+          }} />
+          <div style={{
+            position: 'absolute',
+            left: `${progress * 100}%`,
+            transform: 'translateX(-50%)',
+            width: 12, height: 12, borderRadius: '50%',
+            background: 'var(--text)',
+            boxShadow: '0 0 8px rgba(107,70,255,0.8)',
+            pointerEvents: 'none'
+          }} />
+        </div>
+      </div>
+
+      <style>{`
+        .timeline-track { scrollbar-width: none; -ms-overflow-style: none; }
+        .timeline-track::-webkit-scrollbar { display: none; }
+      `}</style>
 
       {/* Era detail modal */}
       <AnimatePresence>
