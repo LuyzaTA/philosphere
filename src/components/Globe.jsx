@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { motion, AnimatePresence } from 'framer-motion'
 import { philosophers, getInfluenceConnections } from '../data/index.js'
 import { useT } from '../i18n/index.jsx'
+import { useIsMobile } from '../useIsMobile.js'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -391,6 +392,8 @@ function GlobeScene({ onSelectPhilosopher, selectedPhilosopher }) {
 
 function GlobeLegend() {
   const t = useT()
+  const isMobile = useIsMobile()
+  if (isMobile) return null
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}

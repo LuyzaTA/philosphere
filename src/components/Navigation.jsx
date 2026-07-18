@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { useT, useLang } from '../i18n/index.jsx'
+import { useIsMobile } from '../useIsMobile.js'
 
 const VIEW_IDS = [
   { id: 'globe',    icon: '◎' },
@@ -11,6 +12,7 @@ const VIEW_IDS = [
 export default function Navigation({ current, onNavigate }) {
   const t = useT()
   const { lang, setLang } = useLang()
+  const isMobile = useIsMobile()
 
   return (
     <header style={{
@@ -18,7 +20,7 @@ export default function Navigation({ current, onNavigate }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 32px',
+      padding: isMobile ? '0 14px' : '0 32px',
       borderBottom: '1px solid var(--border)',
       background: 'rgba(5,5,16,0.85)',
       backdropFilter: 'blur(16px)',
@@ -42,7 +44,8 @@ export default function Navigation({ current, onNavigate }) {
             border: '1.5px solid var(--violet)',
             borderRadius: '50%',
             borderTopColor: 'var(--cyan)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0
           }}
         >
           <div style={{
@@ -51,15 +54,17 @@ export default function Navigation({ current, onNavigate }) {
             background: 'var(--violet)'
           }} />
         </motion.div>
-        <span style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: '1.1rem',
-          fontWeight: 400,
-          letterSpacing: '0.08em',
-          color: 'var(--text)'
-        }}>
-          Philosphere
-        </span>
+        {!isMobile && (
+          <span style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: '1.1rem',
+            fontWeight: 400,
+            letterSpacing: '0.08em',
+            color: 'var(--text)'
+          }}>
+            Philosphere
+          </span>
+        )}
       </button>
 
       {/* Nav tabs */}
@@ -72,20 +77,23 @@ export default function Navigation({ current, onNavigate }) {
             label={t(`nav_${v.id}`)}
             active={current === v.id}
             onClick={() => onNavigate(v.id)}
+            iconOnly={isMobile}
           />
         ))}
       </nav>
 
       {/* Right slot: hint + language toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{
-          fontSize: '11px',
-          letterSpacing: '0.18em',
-          color: 'var(--text-faint)',
-          textTransform: 'uppercase'
-        }}>
-          {t(`hint_${current}`) ?? ''}
-        </div>
+        {!isMobile && (
+          <div style={{
+            fontSize: '11px',
+            letterSpacing: '0.18em',
+            color: 'var(--text-faint)',
+            textTransform: 'uppercase'
+          }}>
+            {t(`hint_${current}`) ?? ''}
+          </div>
+        )}
         <button
           onClick={() => setLang(lang === 'en' ? 'pt' : 'en')}
           style={{
@@ -116,15 +124,16 @@ export default function Navigation({ current, onNavigate }) {
   )
 }
 
-function NavTab({ icon, label, active, onClick }) {
+function NavTab({ icon, label, active, onClick, iconOnly }) {
   return (
     <motion.button
       onClick={onClick}
+      aria-label={label}
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.97 }}
       style={{
         position: 'relative',
-        padding: '6px 18px',
+        padding: iconOnly ? '8px 12px' : '6px 18px',
         background: active ? 'rgba(107,70,255,0.15)' : 'transparent',
         border: `1px solid ${active ? 'rgba(107,70,255,0.5)' : 'transparent'}`,
         borderRadius: 4,
@@ -137,10 +146,10 @@ function NavTab({ icon, label, active, onClick }) {
         transition: 'color 0.2s, background 0.2s, border-color 0.2s'
       }}
     >
-      <span style={{ fontSize: '10px', color: active ? 'var(--violet)' : 'var(--text-faint)' }}>
+      <span style={{ fontSize: iconOnly ? '14px' : '10px', color: active ? 'var(--violet)' : 'var(--text-faint)' }}>
         {icon}
       </span>
-      {label}
+      {!iconOnly && label}
 
       {active && (
         <motion.div

@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { eras, philosophers, getPhilosopherById } from '../data/index.js'
 import { useT, useLang } from '../i18n/index.jsx'
 import { tEra } from '../i18n/data_pt.js'
+import { useIsMobile } from '../useIsMobile.js'
 
 function ParticleGap({ color }) {
   const canvasRef = useRef(null)
@@ -208,6 +209,7 @@ function EraCard({ era, onClick, index }) {
 function EraDetail({ era, onClose, onSelectPhilosopher }) {
   const t = useT()
   const { lang } = useLang()
+  const isMobile = useIsMobile()
   const eraPhilosophers = era.philosophers
     .map(id => getPhilosopherById(id))
     .filter(Boolean)
@@ -235,12 +237,12 @@ function EraDetail({ era, onClose, onSelectPhilosopher }) {
         onClick={e => e.stopPropagation()}
         style={{
           maxWidth: 780,
-          width: '90%',
+          width: isMobile ? '92%' : '90%',
           maxHeight: '82vh',
           overflow: 'auto',
           background: 'linear-gradient(160deg, #0d0d2b, #080820)',
           border: `1px solid ${era.color}55`,
-          padding: '48px 52px',
+          padding: isMobile ? '32px 22px' : '48px 52px',
           position: 'relative'
         }}
       >
@@ -383,6 +385,10 @@ export default function Timeline({ onSelectPhilosopher }) {
   const scrubRef = useRef(null)
   const drag = useRef({ down: false, moved: false, captured: false, startX: 0, startScroll: 0 })
   const scrubbing = useRef(false)
+
+  // Show eras left-to-right in chronological order (by start year), so newly
+  // added eras land in the right place instead of at the end of the array.
+  const orderedEras = [...eras].sort((a, b) => a.range[0] - b.range[0])
 
   const updateProgress = useCallback(() => {
     const el = scrollRef.current
@@ -567,14 +573,14 @@ export default function Timeline({ onSelectPhilosopher }) {
             position: 'relative', zIndex: 1
           }}
         >
-          {eras.map((era, i) => (
+          {orderedEras.map((era, i) => (
             <div key={era.id} style={{ display: 'flex', alignItems: 'center' }}>
               <EraCard
                 era={era}
                 index={i}
                 onClick={setSelectedEra}
               />
-              {i < eras.length - 1 && (
+              {i < orderedEras.length - 1 && (
                 <ParticleGap color={era.color} />
               )}
             </div>

@@ -7,12 +7,15 @@ import { tIdea } from '../i18n/data_pt.js'
 // ── Force simulation ──────────────────────────────────────────────────────────
 
 function buildGraph(W, H) {
+  // Scale node size down on smaller canvases so the graph never overflows the
+  // viewport, and cap the count contribution so busy ideas stay reasonable.
+  const scale = Math.min(1, W / 760)
   const nodes = ideas.map((idea, i) => ({
     ...idea,
     x: W / 2 + (Math.random() - 0.5) * W * 0.5,
     y: H / 2 + (Math.random() - 0.5) * H * 0.5,
     vx: 0, vy: 0,
-    r: 16 + idea.philosophers.length * 3.5
+    r: (15 + Math.min(idea.philosophers.length, 14) * 2.6) * scale
   }))
 
   const edges = []
@@ -203,7 +206,7 @@ function IdeaDetail({ idea, onClose, onSelectPhilosopher }) {
       style={{
         position: 'absolute',
         top: 20, right: 20,
-        width: 320,
+        width: 'min(320px, calc(100vw - 24px))',
         maxHeight: 'calc(100% - 40px)',
         overflowY: 'auto',
         background: 'rgba(8,8,30,0.96)',
@@ -337,6 +340,7 @@ function IdeaDetail({ idea, onClose, onSelectPhilosopher }) {
 
 export default function IdeaExplorer({ onSelectPhilosopher }) {
   const t = useT()
+  const { lang } = useLang()
   const canvasRef = useRef(null)
   const stateRef = useRef({ nodes: [], edges: [], raf: null, t: 0, settled: false })
   const [hoveredIdea, setHoveredIdea] = useState(null)

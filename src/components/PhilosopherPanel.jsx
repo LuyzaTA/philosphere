@@ -70,7 +70,8 @@ export default function PhilosopherPanel({ philosopher, onClose }) {
       style={{
         position: 'fixed',
         top: 'var(--nav-h)', right: 0, bottom: 0,
-        width: 360,
+        width: 'min(360px, 100vw)',
+        maxWidth: '100vw',
         background: 'rgba(6,6,22,0.97)',
         borderLeft: `1px solid ${eraColor}33`,
         overflowY: 'auto',

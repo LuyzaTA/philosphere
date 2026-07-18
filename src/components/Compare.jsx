@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { philosophers, getPhilosopherById } from '../data/index.js'
 import { useT, useLang } from '../i18n/index.jsx'
+import { useIsMobile } from '../useIsMobile.js'
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -310,8 +311,10 @@ function PhilosopherMini({ philosopherId, onSelect }) {
 function DialogueRow({ dialogue, index, expanded, onToggle, onSelectPhilosopher }) {
   const t = useT()
   const { lang } = useLang()
+  const isMobile = useIsMobile()
   const d = localizeDialogue(dialogue, lang)
   const isOpen = expanded === d.id
+  const cols = isMobile ? '1fr' : '1fr 200px 1fr'
 
   return (
     <motion.div
@@ -327,7 +330,7 @@ function DialogueRow({ dialogue, index, expanded, onToggle, onSelectPhilosopher 
           width: '100%', background: 'none', border: 'none',
           cursor: 'pointer', padding: '0',
           display: 'grid',
-          gridTemplateColumns: '1fr 200px 1fr',
+          gridTemplateColumns: cols,
           alignItems: 'center',
           gap: 0,
           minHeight: isOpen ? 'auto' : 72
@@ -335,6 +338,7 @@ function DialogueRow({ dialogue, index, expanded, onToggle, onSelectPhilosopher 
       >
         {/* West preview */}
         <div style={{
+          display: isMobile ? 'none' : 'block',
           padding: '18px 24px 18px 0',
           textAlign: 'right',
           borderRight: '1px solid rgba(107,70,255,0.2)'
@@ -376,6 +380,7 @@ function DialogueRow({ dialogue, index, expanded, onToggle, onSelectPhilosopher 
 
         {/* East preview */}
         <div style={{
+          display: isMobile ? 'none' : 'block',
           padding: '18px 0 18px 24px',
           textAlign: 'left',
           borderLeft: '1px solid rgba(107,70,255,0.2)'
@@ -408,14 +413,14 @@ function DialogueRow({ dialogue, index, expanded, onToggle, onSelectPhilosopher 
           >
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 200px 1fr',
+              gridTemplateColumns: cols,
               gap: 0,
               paddingBottom: 28
             }}>
               {/* West detail */}
               <div style={{
-                padding: '20px 28px 0 0',
-                borderRight: '1px solid rgba(107,70,255,0.2)'
+                padding: isMobile ? '18px 0 0' : '20px 28px 0 0',
+                borderRight: isMobile ? 'none' : '1px solid rgba(107,70,255,0.2)'
               }}>
                 <div style={{
                   fontSize: '9px', letterSpacing: '0.2em',
@@ -448,14 +453,16 @@ function DialogueRow({ dialogue, index, expanded, onToggle, onSelectPhilosopher 
 
               {/* Bridge */}
               <div style={{
-                padding: '20px 20px 0',
+                padding: isMobile ? '18px 0 0' : '20px 20px 0',
+                marginTop: isMobile ? 16 : 0,
+                borderTop: isMobile ? '1px solid rgba(107,70,255,0.2)' : 'none',
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', gap: 12
               }}>
-                <div style={{
+                {!isMobile && <div style={{
                   width: 1, flex: 1,
                   background: 'linear-gradient(to bottom, rgba(107,70,255,0.3), rgba(255,140,66,0.3))'
-                }} />
+                }} />}
                 <div style={{
                   padding: '14px 16px',
                   background: 'rgba(107,70,255,0.07)',
@@ -495,16 +502,18 @@ function DialogueRow({ dialogue, index, expanded, onToggle, onSelectPhilosopher 
                     {d.question}
                   </p>
                 </div>
-                <div style={{
+                {!isMobile && <div style={{
                   width: 1, flex: 1,
                   background: 'linear-gradient(to bottom, rgba(255,140,66,0.3), rgba(107,70,255,0.3))'
-                }} />
+                }} />}
               </div>
 
               {/* East detail */}
               <div style={{
-                padding: '20px 0 0 28px',
-                borderLeft: '1px solid rgba(107,70,255,0.2)'
+                padding: isMobile ? '18px 0 0' : '20px 0 0 28px',
+                marginTop: isMobile ? 16 : 0,
+                borderTop: isMobile ? '1px solid rgba(255,140,66,0.2)' : 'none',
+                borderLeft: isMobile ? 'none' : '1px solid rgba(107,70,255,0.2)'
               }}>
                 <div style={{
                   fontSize: '9px', letterSpacing: '0.2em',
@@ -607,6 +616,7 @@ function TraditionColumn({ title, color, phils, onSelect }) {
 export default function Compare({ onSelectPhilosopher }) {
   const t = useT()
   const { lang } = useLang()
+  const isMobile = useIsMobile()
   const [expanded, setExpanded] = useState(null)
 
   const toggle = (id) => setExpanded(prev => prev === id ? null : id)
@@ -626,7 +636,7 @@ export default function Compare({ onSelectPhilosopher }) {
       overflowY: 'auto',
       background: 'radial-gradient(ellipse at 50% 0%, #0a0618 0%, #050510 50%)'
     }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '24px 16px 64px' : '40px 40px 80px' }}>
 
         {/* Header */}
         <motion.div
@@ -669,9 +679,9 @@ export default function Compare({ onSelectPhilosopher }) {
           </p>
         </motion.div>
 
-        {/* Column labels */}
+        {/* Column labels (desktop only — on mobile the rows stack) */}
         <div style={{
-          display: 'grid',
+          display: isMobile ? 'none' : 'grid',
           gridTemplateColumns: '1fr 200px 1fr',
           gap: 0,
           marginBottom: 4,
@@ -729,7 +739,7 @@ export default function Compare({ onSelectPhilosopher }) {
           }}>
             {t('compare_all')}
           </div>
-          <div style={{ display: 'flex', gap: 40 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 32 : 40 }}>
             <TraditionColumn
               title={t('compare_west_trad')}
               color="#6B46FF"
@@ -737,7 +747,8 @@ export default function Compare({ onSelectPhilosopher }) {
               onSelect={onSelectPhilosopher}
             />
             <div style={{
-              width: 1,
+              width: isMobile ? '100%' : 1,
+              height: isMobile ? 1 : 'auto',
               background: 'linear-gradient(to bottom, transparent, rgba(107,70,255,0.3), rgba(255,140,66,0.3), transparent)'
             }} />
             <TraditionColumn
